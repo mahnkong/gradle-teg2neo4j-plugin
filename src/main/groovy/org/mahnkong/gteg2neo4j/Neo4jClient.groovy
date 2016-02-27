@@ -1,4 +1,4 @@
-package org.mahnkong
+package org.mahnkong.gteg2neo4j
 
 import org.neo4j.jdbc.Driver
 import org.neo4j.jdbc.Neo4jConnection

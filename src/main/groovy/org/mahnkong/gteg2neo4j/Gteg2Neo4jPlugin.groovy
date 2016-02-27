@@ -1,4 +1,4 @@
-package org.mahnkong
+package org.mahnkong.gteg2neo4j
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
