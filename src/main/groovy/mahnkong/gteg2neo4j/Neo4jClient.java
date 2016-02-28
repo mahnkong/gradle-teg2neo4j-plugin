@@ -25,7 +25,7 @@ public class Neo4jClient {
     }
 
     void createTaskNode(String name, String buildId) throws SQLException {
-        logger.info(String.format("%s :: Adding task '%s' to db", Gteg2Neo4JConstants.EXTENSION_NAME.getValue(), name));
+        logger.info(String.format("%s :: Adding task '%s' to db", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), name));
         try (PreparedStatement createTaskStmt = connection.prepareStatement(CYPHER_CREATE_NOTE)) {
             createTaskStmt.setString(1, name);
             createTaskStmt.setString(2, buildId);
@@ -34,7 +34,7 @@ public class Neo4jClient {
     }
 
     void createTaskRelationship(String task, String dependsOnTask, String buildId) throws SQLException {
-        logger.info(String.format("%s :: Adding relationship between tasks '%s' and '%s'", Gteg2Neo4JConstants.EXTENSION_NAME.getValue(),task, dependsOnTask));
+        logger.info(String.format("%s :: Adding relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, dependsOnTask));
         try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_RELATIONSHIP)) {
             createRelationshipStmt.setString(1, task);
             createRelationshipStmt.setString(2, buildId);
@@ -52,11 +52,11 @@ public class Neo4jClient {
     }
 
     public void close() {
-        logger.info(String.format("%s :: Closing connection", Gteg2Neo4JConstants.EXTENSION_NAME.getValue()));
+        logger.info(String.format("%s :: Closing connection", Gteg2Neo4jConstants.EXTENSION_NAME.getValue()));
         try {
             connection.close();
         } catch (SQLException e) {
-            logger.error(String.format("%s :: Exception while closing connection! [%s]", Gteg2Neo4JConstants.EXTENSION_NAME.getValue(), e.getMessage()), e);
+            logger.error(String.format("%s :: Exception while closing connection! [%s]", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), e.getMessage()), e);
         }
     }
 }

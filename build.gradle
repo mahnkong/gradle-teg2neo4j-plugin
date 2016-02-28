@@ -15,22 +15,6 @@ repositories {
     }
 }
 
-dependencies {
-    compile gradleApi()
-    compile localGroovy()
-    compile "org.neo4j:neo4j-jdbc:${neo4jVersion}:jar-with-dependencies"
-    testCompile 'junit:junit:4.12'
-    testCompile gradleTestKit()
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: uri('../repo'))
-        }
-    }
-}
-
 // Write the plugin's classpath to a file to share with the tests
 task createClasspathManifest {
     def outputDir = file("$buildDir/$name")
@@ -44,7 +28,23 @@ task createClasspathManifest {
     }
 }
 
-// Add the classpath file to the test runtime classpath
 dependencies {
+    compile gradleApi()
+    compile localGroovy()
+    compile "org.neo4j:neo4j-jdbc:${neo4jVersion}:jar-with-dependencies"
+
+    testCompile "org.neo4j.test:neo4j-harness:${neo4jVersion}"
+    testCompile 'junit:junit:4.12'
+    testCompile gradleTestKit()
+
     testRuntime files(createClasspathManifest)
 }
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: uri('../repo'))
+        }
+    }
+}
+

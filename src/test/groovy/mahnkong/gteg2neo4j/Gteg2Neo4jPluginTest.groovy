@@ -4,10 +4,11 @@ import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.neo4j.harness.ServerControls
+import org.neo4j.harness.TestServerBuilders
 
 import static org.gradle.util.GFileUtils.writeFile
 import static org.junit.Assert.assertTrue
@@ -38,8 +39,8 @@ class Gteg2Neo4jPluginTest {
     @Test
     public void pluginAddsExtensionToProject() {
         Project project = ProjectBuilder.builder().build()
-        project.pluginManager.apply "mahnkong.${Gteg2Neo4JConstants.EXTENSION_NAME.value}"
-        assertTrue(project.extensions.getByName(Gteg2Neo4JConstants.EXTENSION_NAME.value) instanceof Gteg2Neo4jExtension)
+        project.pluginManager.apply "mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}"
+        assertTrue(project.extensions.getByName(Gteg2Neo4jConstants.EXTENSION_NAME.value) instanceof Gteg2Neo4jExtension)
     }
 
     @Test
@@ -49,7 +50,7 @@ class Gteg2Neo4jPluginTest {
                 "                classpath files($pluginClassPath)\n" +
                 "            }\n" +
                 "        }\n" +
-                "apply plugin: 'mahnkong.${Gteg2Neo4JConstants.EXTENSION_NAME.value}'\n" +
+                "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "task task1 {\n" +
                 "    doFirst {\n" +
                 "        println 'Hello 1'\n" +
@@ -75,18 +76,19 @@ class Gteg2Neo4jPluginTest {
         assertTrue(buildResult.output.contains(Gteg2Neo4jPlugin.CONFIG_INCOMPLETE_ERROR))
     }
 
-    @Test @Ignore("fixme")
+    @Test
     public void usePluginWithConfig() {
+        ServerControls server = TestServerBuilders.newInProcessBuilder().newServer()
         String buildFileContent = "buildscript {\n" +
                 "            dependencies {\n" +
                 "                classpath files($pluginClassPath)\n" +
                 "            }\n" +
                 "        }\n" +
-                "apply plugin: 'mahnkong.${Gteg2Neo4JConstants.EXTENSION_NAME.value}'\n" +
-                "${Gteg2Neo4JConstants.EXTENSION_NAME.value} { \n" +
+                "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
+                "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
                 "    neo4jUser 'neo4j'\n" +
                 "    neo4jPassword 'neo4j'\n" +
-                "    neo4jServer 'file:${testProjectDir.root.absolutePath.replaceAll("\\\\", "/")}'\n" +
+                "    neo4jServer '${server.httpURI().toString().replace("http://", "")}'\n" +
                 "} \n" +
                 "task task1 {\n" +
                 "    doFirst {\n" +
@@ -110,5 +112,8 @@ class Gteg2Neo4jPluginTest {
                 .withArguments("-m")
                 .build()
         assertTrue(buildResult.output.contains("BUILD SUCCESS"))
+        assertTrue(buildResult.output.contains(Gteg2Neo4jPlugin.BUILD_ID_OUTPUT_PREFIX))
+
+        server.close()
     }
 }
