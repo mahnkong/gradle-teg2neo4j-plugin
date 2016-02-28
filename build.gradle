@@ -1,10 +1,4 @@
 apply plugin: 'groovy'
-
-dependencies {
-    compile gradleApi()
-    compile localGroovy()
-}
-
 apply plugin: 'maven'
 
 repositories {
@@ -15,11 +9,13 @@ repositories {
 }
 
 dependencies {
+    compile gradleApi()
+    compile localGroovy()
     compile 'org.neo4j:neo4j-jdbc:2.3.2:jar-with-dependencies'
     testCompile 'junit:junit:4.12'
 }
 
-group = 'org.mahnkong'
+group = 'mahnkong'
 version = '1.0.0-SNAPSHOT'
 
 uploadArchives {

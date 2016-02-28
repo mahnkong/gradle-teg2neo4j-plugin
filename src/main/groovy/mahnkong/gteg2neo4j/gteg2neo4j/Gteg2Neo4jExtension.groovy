@@ -1,4 +1,4 @@
-package org.mahnkong.gteg2neo4j
+package mahnkong.gteg2neo4j.gteg2neo4j
 
 /**
  * Created by mahnkong on 27.02.2016.

@@ -1,4 +1,4 @@
-package org.mahnkong.gteg2neo4j
+package mahnkong.gteg2neo4j.gteg2neo4j
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -8,8 +8,6 @@ import org.gradle.api.execution.TaskExecutionGraph
  * Created by mahnkong on 27.02.2016.
  */
 class Gteg2Neo4jPlugin implements Plugin<Project> {
-
-    final EXTENSION_NAME = "gteg2neo4j"
 
     def Map getTaskMapFromTaskGraph(TaskExecutionGraph graph) {
         def taskMap = [:]
@@ -23,17 +21,17 @@ class Gteg2Neo4jPlugin implements Plugin<Project> {
 
     def validateParams(extension, logger) {
         if (extension.disabled) {
-            logger.info("'${EXTENSION_NAME}' has been disabled - won't send data to neo4j!")
+            logger.info("'${Greg2Neo4JConstants.EXTENSION_NAME.value}' has been disabled - won't send data to neo4j!")
             return false
         } else if (!extension.neo4jServer || !extension.neo4jUser || !extension.neo4jPassword) {
-            logger.error("neo4jServer, neo4jUser and neo4jPassword must be defined for '${EXTENSION_NAME}' plugin!")
+            logger.error("neo4jServer, neo4jUser and neo4jPassword must be defined for '${Greg2Neo4JConstants.EXTENSION_NAME.value}' plugin!")
             return false
         }
         return true
     }
 
     void apply(Project project) {
-        project.extensions.create(EXTENSION_NAME, Gteg2Neo4jExtension)
+        project.extensions.create(Greg2Neo4JConstants.EXTENSION_NAME.value, Gteg2Neo4jExtension)
         if (project.gradle.getStartParameter().dryRun) {
             def taskMap = [:]
             project.gradle.getTaskGraph().whenReady {
@@ -41,13 +39,13 @@ class Gteg2Neo4jPlugin implements Plugin<Project> {
             }
 
             project.gradle.buildFinished {
-                def extension = project.extensions.getByName(EXTENSION_NAME)
+                def extension = project.extensions.getByName(Greg2Neo4JConstants.EXTENSION_NAME.value)
                 if (! validateParams(extension, project.logger))
                     return
 
                 def neo4jClient = new Neo4jClient(extension.neo4jServer, extension.neo4jUser, extension.neo4jPassword, project.logger)
-                def buildId = "${project.name}::${UUID.randomUUID().toString()}";
-                println "This build has the id: ${buildId}"
+                String buildId = new String("${project.name}::${UUID.randomUUID().toString()}")
+                println "${Greg2Neo4JConstants.EXTENSION_NAME.value} :: This build has the id: ${buildId}"
 
                 taskMap.each { task, dependencyTasks ->
                     neo4jClient.createTaskNode(task, buildId)
