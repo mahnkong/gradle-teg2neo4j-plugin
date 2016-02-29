@@ -1,5 +1,6 @@
 package mahnkong.gteg2neo4j;
 
+import org.gradle.api.Task;
 import org.gradle.api.logging.Logger;
 import org.neo4j.jdbc.Driver;
 import org.neo4j.jdbc.Neo4jConnection;
@@ -24,21 +25,21 @@ public class Neo4jClient {
         this.logger = logger;
     }
 
-    void createTaskNode(String name, String buildId) throws SQLException {
-        logger.info(String.format("%s :: Adding task '%s' to db", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), name));
+    void createTaskNode(Task task, String buildId) throws SQLException {
+        logger.info(String.format("%s :: Adding task '%s' to db", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), task.getPath()));
         try (PreparedStatement createTaskStmt = connection.prepareStatement(CYPHER_CREATE_NOTE)) {
-            createTaskStmt.setString(1, name);
+            createTaskStmt.setString(1, task.getPath());
             createTaskStmt.setString(2, buildId);
             createTaskStmt.execute();
         }
     }
 
-    void createTaskRelationship(String task, String dependsOnTask, String buildId) throws SQLException {
+    void createTaskRelationship(Task task, Task dependsOnTask, String buildId) throws SQLException {
         logger.info(String.format("%s :: Adding relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, dependsOnTask));
         try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_RELATIONSHIP)) {
-            createRelationshipStmt.setString(1, task);
+            createRelationshipStmt.setString(1, task.getPath());
             createRelationshipStmt.setString(2, buildId);
-            createRelationshipStmt.setString(3, dependsOnTask);
+            createRelationshipStmt.setString(3, dependsOnTask.getPath());
             createRelationshipStmt.setString(4, buildId);
             createRelationshipStmt.execute();
         }

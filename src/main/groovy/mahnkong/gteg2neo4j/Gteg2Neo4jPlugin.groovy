@@ -15,9 +15,7 @@ class Gteg2Neo4jPlugin implements Plugin<Project> {
     def Map getTaskMapFromTaskGraph(TaskExecutionGraph graph) {
         def taskMap = [:]
         graph.allTasks.each {
-            def deps = []
-            it.taskDependencies.getDependencies(it).each { deps << it.path }
-            taskMap.put(it.path, deps)
+            taskMap.put(it, it.taskDependencies.getDependencies(it))
         }
         return taskMap
     }
