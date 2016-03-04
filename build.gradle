@@ -18,7 +18,7 @@ repositories {
 }
 
 gteg2neo4j {
-    neo4jServer "localhost:7474"
+    neo4jServer "http://localhost:7474"
     neo4jUser "neo4j"
     neo4jPassword "password"
 }

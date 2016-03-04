@@ -2,6 +2,7 @@ package mahnkong.gteg2neo4j
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.execution.TaskExecutionGraph
 
 /**
@@ -13,9 +14,12 @@ class Gteg2Neo4jPlugin implements Plugin<Project> {
     final static BUILD_ID_OUTPUT_PREFIX = "${Gteg2Neo4jConstants.EXTENSION_NAME.value} :: This build has the id:"
 
     def Map getTaskMapFromTaskGraph(TaskExecutionGraph graph) {
-        def taskMap = [:]
+        def Map<Task, Map<TaskRelationships, Set<Task>>> taskMap = [:]
         graph.allTasks.each {
-            taskMap.put(it, it.taskDependencies.getDependencies(it))
+            def relationsShips = [:]
+            relationsShips.put(TaskRelationships.DEPENDS_ON, it.taskDependencies.getDependencies(it))
+            relationsShips.put(TaskRelationships.FINALIZED_BY, it.finalizedBy.getDependencies(it))
+            taskMap.put(it, relationsShips)
         }
         return taskMap
     }
@@ -33,8 +37,8 @@ class Gteg2Neo4jPlugin implements Plugin<Project> {
 
     void apply(Project project) {
         project.extensions.create(Gteg2Neo4jConstants.EXTENSION_NAME.value, Gteg2Neo4jExtension)
-        if (project.gradle.getStartParameter().dryRun) {
-            def taskMap = [:]
+        //if (project.gradle.getStartParameter().dryRun) {
+            def Map<Task, Map<TaskRelationships, Set<Task>>> taskMap = [:]
             project.gradle.getTaskGraph().whenReady {
                 taskMap = getTaskMapFromTaskGraph(it)
             }
@@ -48,15 +52,21 @@ class Gteg2Neo4jPlugin implements Plugin<Project> {
                 String buildId = new String("${project.name}::${UUID.randomUUID().toString()}")
                 println "${BUILD_ID_OUTPUT_PREFIX} ${buildId}"
 
-                taskMap.each { task, dependencyTasks ->
+                taskMap.each { task, relationships ->
                     neo4jClient.createTaskNode(task, buildId)
-                    dependencyTasks.each { dependency ->
-                        neo4jClient.createTaskNode(dependency, buildId)
-                        neo4jClient.createTaskRelationship(task, dependency, buildId)
+                    relationships.each { relationshipType, tasks ->
+                        tasks.each {
+                            neo4jClient.createTaskNode(it, buildId)
+                            if (relationshipType.equals(TaskRelationships.DEPENDS_ON)) {
+                                neo4jClient.createTaskDependsOnRelationship(task, it, buildId)
+                            } else {
+                                neo4jClient.createTaskFinalizedByRelationship(task, it, buildId)
+                            }
+                        }
                     }
                 }
-                neo4jClient.close()
+                neo4jClient.commitAndClose()
             }
-        }
+        //}
     }
 }

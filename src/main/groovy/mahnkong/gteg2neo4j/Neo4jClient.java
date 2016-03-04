@@ -14,14 +14,16 @@ import java.util.Properties;
  */
 public class Neo4jClient {
 
-    private static final String CYPHER_CREATE_NOTE = "MERGE (n:buildtask {name: ?, build: ?}) RETURN n";
-    private static final String CYPHER_CREATE_RELATIONSHIP = "MATCH (a:buildtask), (b:buildtask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:dependsOn]->(b) RETURN r";
+    private static final String CYPHER_CREATE_NOTE = "MERGE (n:BuildTask {name: ?, build: ?, didWork: ?}) RETURN n";
+    private static final String CYPHER_CREATE_DEPENDSON_RELATIONSHIP = "MATCH (a:BuildTask), (b:BuildTask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:DEPENDS_ON]->(b) RETURN r";
+    private static final String CYPHER_CREATE_FINALIZES_RELATIONSHIP = "MATCH (a:BuildTask), (b:BuildTask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:FINALIZES]->(b) RETURN r";
 
     Neo4jConnection connection;
     Logger logger;
 
     public Neo4jClient(String server, String user, String password, Logger logger) throws SQLException {
         this.connection = createConnection(server, user, password);
+        this.connection.setAutoCommit(false);
         this.logger = logger;
     }
 
@@ -30,16 +32,28 @@ public class Neo4jClient {
         try (PreparedStatement createTaskStmt = connection.prepareStatement(CYPHER_CREATE_NOTE)) {
             createTaskStmt.setString(1, task.getPath());
             createTaskStmt.setString(2, buildId);
+            createTaskStmt.setBoolean(3, task.getState().getDidWork());
             createTaskStmt.execute();
         }
     }
 
-    void createTaskRelationship(Task task, Task dependsOnTask, String buildId) throws SQLException {
-        logger.info(String.format("%s :: Adding relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, dependsOnTask));
-        try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_RELATIONSHIP)) {
+    void createTaskDependsOnRelationship(Task task, Task dependsOnTask, String buildId) throws SQLException {
+        logger.info(String.format("%s :: Adding DEPENDS_ON relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, dependsOnTask));
+        try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_DEPENDSON_RELATIONSHIP)) {
             createRelationshipStmt.setString(1, task.getPath());
             createRelationshipStmt.setString(2, buildId);
             createRelationshipStmt.setString(3, dependsOnTask.getPath());
+            createRelationshipStmt.setString(4, buildId);
+            createRelationshipStmt.execute();
+        }
+    }
+
+    void createTaskFinalizedByRelationship(Task task, Task finalizedByTask, String buildId) throws SQLException {
+        logger.info(String.format("%s :: Adding FINALIZES relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, finalizedByTask));
+        try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_FINALIZES_RELATIONSHIP)) {
+            createRelationshipStmt.setString(1, finalizedByTask.getPath());
+            createRelationshipStmt.setString(2, buildId);
+            createRelationshipStmt.setString(3, task.getPath());
             createRelationshipStmt.setString(4, buildId);
             createRelationshipStmt.execute();
         }
@@ -49,15 +63,16 @@ public class Neo4jClient {
         Properties connectionProps = new Properties();
         connectionProps.put("user", user);
         connectionProps.put("password", password);
-        return new Driver().connect(String.format("jdbc:neo4j://%s", server), connectionProps);
+        return new Driver().connect(String.format("jdbc:neo4j:%s", server), connectionProps);
     }
 
-    public void close() {
-        logger.info(String.format("%s :: Closing connection", Gteg2Neo4jConstants.EXTENSION_NAME.getValue()));
+    public void commitAndClose() {
+        logger.info(String.format("%s :: Committing and closing connection", Gteg2Neo4jConstants.EXTENSION_NAME.getValue()));
         try {
+            connection.commit();
             connection.close();
         } catch (SQLException e) {
-            logger.error(String.format("%s :: Exception while closing connection! [%s]", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), e.getMessage()), e);
+            logger.error(String.format("%s :: Exception while committing & closing connection! [%s]", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), e.getMessage()), e);
         }
     }
 }
