@@ -32,16 +32,32 @@ task createClasspathManifest {
     }
 }
 
+configurations {
+    uberjarLib
+    compile.extendsFrom(uberjarLib)
+}
+
 dependencies {
     compile gradleApi()
     compile localGroovy()
-    compile "org.neo4j:neo4j-jdbc:${neo4jVersion}:jar-with-dependencies"
+
+    uberjarLib "org.neo4j:neo4j-jdbc:${neo4jVersion}:jar-with-dependencies"
 
     testCompile "org.neo4j.test:neo4j-harness:${neo4jVersion}"
     testCompile 'junit:junit:4.12'
     testCompile gradleTestKit()
 
     testRuntime files(createClasspathManifest)
+}
+
+task uberjar(type: Jar) {
+    baseName = project.name + '-with-dependencies'
+    from {
+        configurations.uberjarLib.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    with jar
 }
 
 uploadArchives() {
