@@ -2,7 +2,7 @@
 
 # Gteg2Neo4j
 
-Gradle Plugin providing functionality to store a project build's "Gradle Task Execution Grapth" including information (success, failure, etc.) about each task inside a Neo4j instance.
+Gradle Plugin providing functionality to store the "Gradle Task Execution Graph" (including information like success, failure, etc. for each task of the current build) of a project's build inside a Neo4j instance.
 
 Once imported, the graph can be seen directly inside the Neo4j browser and detailed data can be queried using the Neo4j Cypher language.
 
