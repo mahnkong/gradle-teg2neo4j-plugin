@@ -7,6 +7,7 @@ import org.neo4j.jdbc.Neo4jConnection;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Properties;
 
 /**
@@ -14,12 +15,13 @@ import java.util.Properties;
  */
 public class Neo4jClient {
 
-    private static final String CYPHER_CREATE_NOTE = "MERGE (n:%s {name: ?, build: ?, executed: ?, didWork: ?, skipped: ?, upToDate: ?, failureMsg: ?}) RETURN n";
+    private static final String CYPHER_CREATE_NOTE = "MERGE (n:%s {name: ?, build: ?, executed: ?, didWork: ?, skipped: ?, upToDate: ?, failureMsg: ?, insertedAt: ?}) RETURN n";
     private static final String CYPHER_CREATE_DEPENDSON_RELATIONSHIP = "MATCH (a:BuildTask), (b:BuildTask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:DEPENDS_ON]->(b) RETURN r";
     private static final String CYPHER_CREATE_FINALIZES_RELATIONSHIP = "MATCH (a:BuildTask), (b:BuildTask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:FINALIZES]->(b) RETURN r";
 
     Neo4jConnection connection;
     Logger logger;
+    private long insertTimestamp = Instant.now().toEpochMilli();
 
     public Neo4jClient(String server, String user, String password, Logger logger) throws SQLException {
         this.connection = createConnection(server, user, password);
@@ -42,6 +44,7 @@ public class Neo4jClient {
             createTaskStmt.setBoolean(5, task.getState().getSkipped());
             createTaskStmt.setBoolean(6, task.getState().getUpToDate());
             createTaskStmt.setString(7, (task.getState().getFailure() != null ? task.getState().getFailure().getMessage() : ""));
+            createTaskStmt.setLong(8, insertTimestamp);
             createTaskStmt.execute();
         }
     }
