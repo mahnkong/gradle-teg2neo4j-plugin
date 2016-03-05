@@ -51,7 +51,8 @@ dependencies {
 }
 
 task uberJar(type: Jar) {
-    baseName = project.name + '-with-dependencies'
+    baseName = project.name
+    classifier = 'with-dependencies'
     from {
         configurations.uberJarLib.collect {
             it.isDirectory() ? it : zipTree(it)
