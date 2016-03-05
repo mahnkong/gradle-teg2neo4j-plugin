@@ -1,21 +1,16 @@
-buildscript {
-    repositories {
-        maven {
-            url uri('../repo')
-            jcenter()
-            maven {
-                url "http://m2.neo4j.org/content/groups/public"
-            }
-        }
-    }
-    dependencies { classpath group: 'mahnkong', name: 'gteg2neo4j', version: '1.0.0-SNAPSHOT' }
-}
-
-apply plugin: 'mahnkong.gteg2neo4j'
-
 repositories {
     jcenter()
+    maven {
+        url "http://m2.neo4j.org/content/groups/public"
+    }
 }
+
+group = 'mahnkong'
+version = '1.0.0-SNAPSHOT'
+
+apply plugin: 'mahnkong.gteg2neo4j'
+apply plugin: 'groovy'
+apply plugin: 'maven'
 
 gteg2neo4j {
     neo4jServer "http://localhost:7474"
@@ -23,22 +18,9 @@ gteg2neo4j {
     neo4jPassword "password"
 }
 
-
-apply plugin: 'groovy'
-apply plugin: 'maven'
-
-group = 'mahnkong'
-version = '1.0.0-SNAPSHOT'
-
 ext {
     neo4jVersion = '2.3.2'
-}
-
-repositories {
-    jcenter()
-    maven {
-        url "http://m2.neo4j.org/content/groups/public"
-    }
+    neo4jTestInstance = null
 }
 
 // Write the plugin's classpath to a file to share with the tests
@@ -66,11 +48,10 @@ dependencies {
     testRuntime files(createClasspathManifest)
 }
 
-uploadArchives {
+uploadArchives() {
     repositories {
-        mavenDeployer {
-            repository(url: uri('../repo'))
-        }
+        mavenLocal()
     }
 }
 
+uploadArchives.dependsOn('test')

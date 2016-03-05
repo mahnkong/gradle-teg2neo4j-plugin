@@ -14,7 +14,7 @@ import java.util.Properties;
  */
 public class Neo4jClient {
 
-    private static final String CYPHER_CREATE_NOTE = "MERGE (n:BuildTask {name: ?, build: ?, didWork: ?}) RETURN n";
+    private static final String CYPHER_CREATE_NOTE = "MERGE (n:%s {name: ?, build: ?, executed: ?, didWork: ?, skipped: ?, upToDate: ?, failureMsg: ?}) RETURN n";
     private static final String CYPHER_CREATE_DEPENDSON_RELATIONSHIP = "MATCH (a:BuildTask), (b:BuildTask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:DEPENDS_ON]->(b) RETURN r";
     private static final String CYPHER_CREATE_FINALIZES_RELATIONSHIP = "MATCH (a:BuildTask), (b:BuildTask) WHERE a.name = ? AND a.build = ? AND b.name = ? AND b.build = ? CREATE (a)-[r:FINALIZES]->(b) RETURN r";
 
@@ -29,50 +29,71 @@ public class Neo4jClient {
 
     void createTaskNode(Task task, String buildId) throws SQLException {
         logger.info(String.format("%s :: Adding task '%s' to db", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), task.getPath()));
-        try (PreparedStatement createTaskStmt = connection.prepareStatement(CYPHER_CREATE_NOTE)) {
+        String label = "BuildTask" + (task.getState().getFailure() != null ? ":FailedTask" :
+            (task.getState().getSkipped() && ! task.getState().getUpToDate() ? ":SkippedTask" :
+                (task.getState().getExecuted() ? ":SuccessfulTask" : "")
+            )
+        );
+        try (PreparedStatement createTaskStmt = connection.prepareStatement(String.format(CYPHER_CREATE_NOTE, label))) {
             createTaskStmt.setString(1, task.getPath());
             createTaskStmt.setString(2, buildId);
-            createTaskStmt.setBoolean(3, task.getState().getDidWork());
+            createTaskStmt.setBoolean(3, task.getState().getExecuted());
+            createTaskStmt.setBoolean(4, task.getState().getDidWork());
+            createTaskStmt.setBoolean(5, task.getState().getSkipped());
+            createTaskStmt.setBoolean(6, task.getState().getUpToDate());
+            createTaskStmt.setString(7, (task.getState().getFailure() != null ? task.getState().getFailure().getMessage() : ""));
             createTaskStmt.execute();
+        }
+    }
+
+    private void createTaskRelationship(Task left, Task right, String buildId, String query) throws SQLException {
+        try (PreparedStatement createRelationshipStmt = connection.prepareStatement(query)) {
+            createRelationshipStmt.setString(1, left.getPath());
+            createRelationshipStmt.setString(2, buildId);
+            createRelationshipStmt.setString(3, right.getPath());
+            createRelationshipStmt.setString(4, buildId);
+            createRelationshipStmt.execute();
         }
     }
 
     void createTaskDependsOnRelationship(Task task, Task dependsOnTask, String buildId) throws SQLException {
         logger.info(String.format("%s :: Adding DEPENDS_ON relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, dependsOnTask));
-        try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_DEPENDSON_RELATIONSHIP)) {
-            createRelationshipStmt.setString(1, task.getPath());
-            createRelationshipStmt.setString(2, buildId);
-            createRelationshipStmt.setString(3, dependsOnTask.getPath());
-            createRelationshipStmt.setString(4, buildId);
-            createRelationshipStmt.execute();
-        }
+        createTaskRelationship(task, dependsOnTask, buildId, CYPHER_CREATE_DEPENDSON_RELATIONSHIP);
+
     }
 
-    void createTaskFinalizedByRelationship(Task task, Task finalizedByTask, String buildId) throws SQLException {
-        logger.info(String.format("%s :: Adding FINALIZES relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),task, finalizedByTask));
-        try (PreparedStatement createRelationshipStmt = connection.prepareStatement(CYPHER_CREATE_FINALIZES_RELATIONSHIP)) {
-            createRelationshipStmt.setString(1, finalizedByTask.getPath());
-            createRelationshipStmt.setString(2, buildId);
-            createRelationshipStmt.setString(3, task.getPath());
-            createRelationshipStmt.setString(4, buildId);
-            createRelationshipStmt.execute();
-        }
+    void createTaskFinalizesRelationship(Task finalizerTask, Task task, String buildId) throws SQLException {
+        logger.info(String.format("%s :: Adding FINALIZES relationship between tasks '%s' and '%s'", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(),finalizerTask, task));
+        createTaskRelationship(finalizerTask, task, buildId, CYPHER_CREATE_FINALIZES_RELATIONSHIP);
     }
 
     private Neo4jConnection createConnection(String server, String user, String password) throws SQLException {
         Properties connectionProps = new Properties();
-        connectionProps.put("user", user);
-        connectionProps.put("password", password);
+
+        if(user != null && !user.isEmpty() && password != null && !password.isEmpty()) {
+            connectionProps.put("user", user);
+            connectionProps.put("password", password);
+        }
         return new Driver().connect(String.format("jdbc:neo4j:%s", server), connectionProps);
+    }
+
+    public void commit() throws SQLException {
+        logger.debug(String.format("%s :: Committing..." , Gteg2Neo4jConstants.EXTENSION_NAME.getValue()));
+        connection.commit();
     }
 
     public void commitAndClose() {
         logger.info(String.format("%s :: Committing and closing connection", Gteg2Neo4jConstants.EXTENSION_NAME.getValue()));
         try {
-            connection.commit();
+            commit();
             connection.close();
         } catch (SQLException e) {
             logger.error(String.format("%s :: Exception while committing & closing connection! [%s]", Gteg2Neo4jConstants.EXTENSION_NAME.getValue(), e.getMessage()), e);
         }
     }
+
+    public Neo4jConnection getConnection() {
+        return connection;
+    }
+
 }

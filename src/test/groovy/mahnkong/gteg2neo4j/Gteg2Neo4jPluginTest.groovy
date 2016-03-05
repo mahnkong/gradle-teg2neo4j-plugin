@@ -10,8 +10,11 @@ import org.junit.rules.TemporaryFolder
 import org.neo4j.harness.ServerControls
 import org.neo4j.harness.TestServerBuilders
 
+import java.sql.PreparedStatement
+import java.sql.ResultSet
+
 import static org.gradle.util.GFileUtils.writeFile
-import static org.junit.Assert.assertTrue
+import static org.junit.Assert.*
 
 /**
  * Created by mahnkong on 28.02.2016.
@@ -78,7 +81,8 @@ class Gteg2Neo4jPluginTest {
 
     @Test
     public void usePluginWithConfig() {
-        ServerControls server = TestServerBuilders.newInProcessBuilder().newServer()
+        ServerControls server = TestServerBuilders.newInProcessBuilder(testProjectDir.getRoot()).newServer()
+
         String buildFileContent = "buildscript {\n" +
                 "            dependencies {\n" +
                 "                classpath files($pluginClassPath)\n" +
@@ -86,9 +90,7 @@ class Gteg2Neo4jPluginTest {
                 "        }\n" +
                 "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
-                "    neo4jUser 'neo4j'\n" +
-                "    neo4jPassword 'neo4j'\n" +
-                "    neo4jServer '${server.httpURI().toString().replace("http://", "")}'\n" +
+                "    neo4jServer '${server.httpURI().toString()}'\n" +
                 "} \n" +
                 "task task1 {\n" +
                 "    doFirst {\n" +
@@ -104,15 +106,51 @@ class Gteg2Neo4jPluginTest {
                 "    doFirst {\n" +
                 "        println 'Hello 3'\n" +
                 "    }\n" +
-                "}";
+                "}\n" +
+                "task task4() {\n" +
+                "    doFirst {\n" +
+                "        println 'Hello 4'\n" +
+                "    }\n" +
+                "}\n" +
+                "task3.finalizedBy('task4')";
         writeFile(buildFileContent, new File("${testProjectDir.root.absolutePath}/build.gradle"))
 
         def buildResult = GradleRunner.create()
                 .withProjectDir(testProjectDir.getRoot())
-                .withArguments("-m")
+                .withArguments("task3")
                 .build()
         assertTrue(buildResult.output.contains("BUILD SUCCESS"))
-        assertTrue(buildResult.output.contains(Gteg2Neo4jPlugin.BUILD_ID_OUTPUT_PREFIX))
+
+        //Get build ID from output
+        def matcher = (buildResult.output =~ /(?ms).*${Gteg2Neo4jPlugin.BUILD_ID_OUTPUT_PREFIX}\s+(\S+)\r?\n/)
+        assertTrue(matcher.matches())
+        def buildId = matcher.getAt(0).getAt(1)
+        assertNotNull(buildId)
+
+        //Check that tasks and relationships are correct in db
+        def neo4jClient = Neo4jClientHelper.getNeo4jClient(server.httpURI().toString());
+        PreparedStatement findTaskStmt = neo4jClient.connection.prepareStatement("MATCH (n:BuildTask{build:?}) RETURN count(n)")
+        findTaskStmt.setString(1, buildId)
+        ResultSet r = findTaskStmt.executeQuery();
+        assertTrue(r.next())
+        assertEquals(4, r.getInt(1))
+        findTaskStmt.close()
+
+        PreparedStatement findFinalizesStmt = neo4jClient.connection.prepareStatement("MATCH (a:BuildTask{build: ?})-[:FINALIZES]->(b:BuildTask{name: ?}) RETURN a")
+        findFinalizesStmt.setString(1, buildId)
+        findFinalizesStmt.setString(2, ':task3')
+        r = findFinalizesStmt.executeQuery();
+        assertTrue(r.next())
+        assertEquals(':task5', r.getObject(1).get('name'))
+        findTaskStmt.close()
+
+        PreparedStatement findDependsOnStmt = neo4jClient.connection.prepareStatement("MATCH (a:BuildTask{build: ?})-[:DEPENDS_ON]->(b:BuildTask{name: ?}) RETURN a")
+        findDependsOnStmt.setString(1, buildId)
+        findDependsOnStmt.setString(2, ':task2')
+        r = findDependsOnStmt.executeQuery();
+        assertTrue(r.next())
+        assertEquals(':task3', r.getObject(1).get('name'))
+        findTaskStmt.close()
 
         server.close()
     }
