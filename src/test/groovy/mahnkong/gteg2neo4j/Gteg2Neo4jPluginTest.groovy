@@ -141,7 +141,7 @@ class Gteg2Neo4jPluginTest {
         findFinalizesStmt.setString(2, ':task3')
         r = findFinalizesStmt.executeQuery();
         assertTrue(r.next())
-        assertEquals(':task5', r.getObject(1).get('name'))
+        assertEquals(':task4', r.getObject(1).get('name'))
         findTaskStmt.close()
 
         PreparedStatement findDependsOnStmt = neo4jClient.connection.prepareStatement("MATCH (a:BuildTask{build: ?})-[:DEPENDS_ON]->(b:BuildTask{name: ?}) RETURN a")
