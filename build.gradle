@@ -1,8 +1,6 @@
 repositories {
     jcenter()
-    maven {
-        url "http://m2.neo4j.org/content/groups/public"
-    }
+    maven { url "http://m2.neo4j.org/content/groups/public" }
 }
 
 group = 'mahnkong'
@@ -10,13 +8,14 @@ version = '1.0.0-SNAPSHOT'
 
 apply plugin: 'groovy'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 ext {
     neo4jVersion = '2.3.2'
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
 
 
 // Write the plugin's classpath to a file to share with the tests
@@ -35,7 +34,7 @@ task createClasspathManifest {
 dependencies {
     compile gradleApi()
     compile localGroovy()
-    compile "org.neo4j:neo4j-jdbc:${neo4jVersion}:jar-with-dependencies"
+    compile "org.neo4j:neo4j-jdbc:${neo4jVersion}"
 
     testCompile "org.neo4j.test:neo4j-harness:${neo4jVersion}"
     testCompile 'junit:junit:4.12'
@@ -44,10 +43,28 @@ dependencies {
     testRuntime files(createClasspathManifest)
 }
 
-uploadArchives() {
+jar {
+    from "LICENSE"
+}
+
+task createPom << {
+    pom {
+        project {
+            groupId project.group
+            artifactId project.name
+            version project.version
+          }
+    }.writeTo("pom.xml")
+}
+
+publishing {
+    publications {
+        artifacts(MavenPublication) {
+            from components.java
+        }
+    }
     repositories {
         mavenLocal()
     }
 }
 
-uploadArchives.dependsOn('test')
