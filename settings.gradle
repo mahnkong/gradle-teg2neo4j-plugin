@@ -16,4 +16,4 @@ include 'api'
 include 'services:webservice'
 */
 
-rootProject.name = 'gteg2neo4j'
+rootProject.name = 'gradle-teg2neo4j-plugin'

@@ -49,10 +49,10 @@ class Gteg2Neo4jPluginTest {
     @Test
     public void usePluginWithoutConfig() {
         String buildFileContent = "buildscript {\n" +
-                "            dependencies {\n" +
-                "                classpath files($pluginClassPath)\n" +
-                "            }\n" +
-                "        }\n" +
+                "    dependencies {\n" +
+                "        classpath files($pluginClassPath)\n" +
+                "    }\n" +
+                "}\n" +
                 "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "task task1 {\n" +
                 "    doFirst {\n" +
@@ -80,14 +80,68 @@ class Gteg2Neo4jPluginTest {
     }
 
     @Test
+    public void pluginDisabledViaConfig() {
+        String buildFileContent = "buildscript {\n" +
+                "    dependencies {\n" +
+                "        classpath files($pluginClassPath)\n" +
+                "    }\n" +
+                "}\n" +
+                "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
+                "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
+                "    neo4jServer 'http://localhost:7474'\n" +
+                "    disabled true\n" +
+                "} \n" +
+                "task task1 {\n" +
+                "    doFirst {\n" +
+                "        println 'Hello 1'\n" +
+                "    }\n" +
+                "}";
+        writeFile(buildFileContent, new File("${testProjectDir.root.absolutePath}/build.gradle"))
+
+        def buildResult = GradleRunner.create()
+                .withProjectDir(testProjectDir.getRoot())
+                .withArguments("task1")
+                .build()
+        assertTrue(buildResult.output.contains("BUILD SUCCESS"))
+        assertTrue(!buildResult.output.contains(Gteg2Neo4jPlugin.BUILD_ID_OUTPUT_PREFIX))
+    }
+
+    @Test
+    public void pluginDisabledViaSystemProperty() {
+        String buildFileContent = "buildscript {\n" +
+                "    dependencies {\n" +
+                "        classpath files($pluginClassPath)\n" +
+                "    }\n" +
+                "}\n" +
+                "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
+                "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
+                "    neo4jServer 'http://localhost:7474'\n" +
+                "    disabled true\n" +
+                "} \n" +
+                "task task1 {\n" +
+                "    doFirst {\n" +
+                "        println 'Hello 1'\n" +
+                "    }\n" +
+                "}";
+        writeFile(buildFileContent, new File("${testProjectDir.root.absolutePath}/build.gradle"))
+
+        def buildResult = GradleRunner.create()
+                .withProjectDir(testProjectDir.getRoot())
+                .withArguments("-D${Gteg2Neo4jConstants.DISABLE_GTEG2NEO2J_PROPERTY.value} task1")
+                .build()
+        assertTrue(buildResult.output.contains("BUILD SUCCESS"))
+        assertTrue(!buildResult.output.contains(Gteg2Neo4jPlugin.BUILD_ID_OUTPUT_PREFIX))
+    }
+
+    @Test
     public void usePluginWithConfig() {
         ServerControls server = TestServerBuilders.newInProcessBuilder(testProjectDir.getRoot()).newServer()
 
         String buildFileContent = "buildscript {\n" +
-                "            dependencies {\n" +
-                "                classpath files($pluginClassPath)\n" +
-                "            }\n" +
-                "        }\n" +
+                "    dependencies {\n" +
+                "        classpath files($pluginClassPath)\n" +
+                "    }\n" +
+                "}\n" +
                 "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
                 "    neo4jServer '${server.httpURI().toString()}'\n" +
@@ -141,7 +195,7 @@ class Gteg2Neo4jPluginTest {
         findFinalizesStmt.setString(2, ':task3')
         r = findFinalizesStmt.executeQuery();
         assertTrue(r.next())
-        assertEquals(':task5', r.getObject(1).get('name'))
+        assertEquals(':task4', r.getObject(1).get('name'))
         findTaskStmt.close()
 
         PreparedStatement findDependsOnStmt = neo4jClient.connection.prepareStatement("MATCH (a:BuildTask{build: ?})-[:DEPENDS_ON]->(b:BuildTask{name: ?}) RETURN a")
@@ -153,5 +207,32 @@ class Gteg2Neo4jPluginTest {
         findTaskStmt.close()
 
         server.close()
+    }
+
+    @Test
+    public void pluginFailuresNeo4jClient() {
+        String buildFileContent = "buildscript {\n" +
+                "    dependencies {\n" +
+                "        classpath files($pluginClassPath)\n" +
+                "    }\n" +
+                "}\n" +
+                "apply plugin: 'mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
+                "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
+                "    neo4jServer 'httb://localhost:7474'\n" +
+                "} \n" +
+                "task task1 {\n" +
+                "    doFirst {\n" +
+                "        println 'Hello 1'\n" +
+                "    }\n" +
+                "}";
+        writeFile(buildFileContent, new File("${testProjectDir.root.absolutePath}/build.gradle"))
+
+        def buildResult = GradleRunner.create()
+                .withProjectDir(testProjectDir.getRoot())
+                .withArguments("task1")
+                .build()
+        assertTrue(buildResult.output.contains("BUILD SUCCESS"))
+        System.err.println(buildResult.output)
+        assertTrue(buildResult.output.contains(Gteg2Neo4jPlugin.EXCEPTION_OCCURED_ERROR))
     }
 }
