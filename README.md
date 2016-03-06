@@ -49,7 +49,7 @@ gteg2neo4j {
 Just execute the build as always. At the end of the build the plugin prints the build id used for the storing of the data in the neo4j instance
 
 ```
-./gradlew build
+$ ./gradlew build
 :compileJava UP-TO-DATE
 :compileGroovy UP-TO-DATE
 :processResources UP-TO-DATE
@@ -74,7 +74,7 @@ gteg2neo4j :: This build has the id: gradle-teg2neo4j-plugin::71592037-771a-4391
 The plugin execution can be disabled during a build by providing the system property "gteg2neo4j.disabled"
 
 ```
-./gradlew build -Dgteg2neo4j.disabled
+$ ./gradlew build -Dgteg2neo4j.disabled
  ...
 BUILD SUCCESSFUL
 
@@ -104,7 +104,7 @@ The following labels exist for the task nodes:
 
 - BuildTask: All task nodes 
 - SucessfulTask: All successful task nodes 
-- FailureTask: All successful task nodes 
+- FailureTask: All failed task nodes 
 
 The following attributes are set for each task node (based on the task's state after the build finished):
 
@@ -126,11 +126,11 @@ The following relationships are set between the task nodes depending on the task
 To build, simply execute the build task from within the project's directory:
 
 ```
-./gradlew build
+$ ./gradlew build
 ```
 
 To publish the build to the local maven repository, execute:
 
 ```
-./gradlew publishAPTMLR
+$ ./gradlew publishAPTMLR
 ```
