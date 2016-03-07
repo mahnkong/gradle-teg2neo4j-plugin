@@ -3,12 +3,8 @@ package com.github.mahnkong.gteg2neo4j
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.rules.TemporaryFolder
-import org.neo4j.harness.ServerControls
-import org.neo4j.harness.TestServerBuilders
 
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -21,10 +17,19 @@ import static org.junit.Assert.*
  */
 class Gteg2Neo4jPluginTest {
 
+    @ClassRule
+    public static final Neo4jTestServer neo4jTestServer = new Neo4jTestServer()
+
     @Rule
     public final TemporaryFolder testProjectDir = new TemporaryFolder();
 
+    private static String serverUrl;
     private String pluginClassPath;
+
+    @BeforeClass
+    public static void setupClass() {
+        serverUrl = neo4jTestServer.getNeo4jControl().httpURI().toString()
+    }
 
     @Before
     public void setup() {
@@ -88,7 +93,7 @@ class Gteg2Neo4jPluginTest {
                 "}\n" +
                 "apply plugin: 'com.github.mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
-                "    neo4jServer 'http://localhost:7474'\n" +
+                "    neo4jServer '${serverUrl}'\n" +
                 "    disabled true\n" +
                 "} \n" +
                 "task task1 {\n" +
@@ -115,7 +120,7 @@ class Gteg2Neo4jPluginTest {
                 "}\n" +
                 "apply plugin: 'com.github.mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
-                "    neo4jServer 'http://localhost:7474'\n" +
+                "    neo4jServer '${serverUrl}'\n" +
                 "    disabled true\n" +
                 "} \n" +
                 "task task1 {\n" +
@@ -135,8 +140,6 @@ class Gteg2Neo4jPluginTest {
 
     @Test
     public void usePluginWithConfig() {
-        ServerControls server = TestServerBuilders.newInProcessBuilder(testProjectDir.getRoot()).newServer()
-
         String buildFileContent = "buildscript {\n" +
                 "    dependencies {\n" +
                 "        classpath files($pluginClassPath)\n" +
@@ -144,7 +147,7 @@ class Gteg2Neo4jPluginTest {
                 "}\n" +
                 "apply plugin: 'com.github.mahnkong.${Gteg2Neo4jConstants.EXTENSION_NAME.value}'\n" +
                 "${Gteg2Neo4jConstants.EXTENSION_NAME.value} { \n" +
-                "    neo4jServer '${server.httpURI().toString()}'\n" +
+                "    neo4jServer '${serverUrl}'\n" +
                 "} \n" +
                 "task task1 {\n" +
                 "    doFirst {\n" +
@@ -182,7 +185,7 @@ class Gteg2Neo4jPluginTest {
         assertNotNull(buildId)
 
         //Check that tasks and relationships are correct in db
-        def neo4jClient = Neo4jClientHelper.getNeo4jClient(server.httpURI().toString());
+        def neo4jClient = Neo4jClientHelper.getNeo4jClient(serverUrl);
         PreparedStatement findTaskStmt = neo4jClient.connection.prepareStatement("MATCH (n:BuildTask{build:?}) RETURN count(n)")
         findTaskStmt.setString(1, buildId)
         ResultSet r = findTaskStmt.executeQuery();
@@ -205,8 +208,6 @@ class Gteg2Neo4jPluginTest {
         assertTrue(r.next())
         assertEquals(':task3', r.getObject(1).get('name'))
         findTaskStmt.close()
-
-        server.close()
     }
 
     @Test

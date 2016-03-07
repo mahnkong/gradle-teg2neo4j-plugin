@@ -2,13 +2,9 @@ package com.github.mahnkong.gteg2neo4j
 
 import org.gradle.api.Task
 import org.gradle.api.tasks.TaskState
-import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.ClassRule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
-import org.neo4j.harness.ServerControls
-import org.neo4j.harness.TestServerBuilders
 
 import java.sql.PreparedStatement
 import java.sql.ResultSet
@@ -20,16 +16,14 @@ import static org.junit.Assert.assertTrue
  * Created by mahnkong on 05.03.2016.
  */
 public class Neo4jClientTest {
-    private static ServerControls neo4jControl;
     private static Neo4jClient neo4jClient;
 
     @ClassRule
-    public static final TemporaryFolder testDir = new TemporaryFolder();
+    public static final Neo4jTestServer neo4jTestServer = new Neo4jTestServer()
 
     @BeforeClass
     public static void startNeo4j() {
-        neo4jControl = TestServerBuilders.newInProcessBuilder(testDir.getRoot()).newServer();
-        neo4jClient = Neo4jClientHelper.getNeo4jClient(neo4jControl.httpURI().toString());
+        neo4jClient = Neo4jClientHelper.getNeo4jClient(neo4jTestServer.getNeo4jControl().httpURI().toString());
     }
 
     @Test
@@ -130,10 +124,5 @@ public class Neo4jClientTest {
         assertTrue(r.next())
         assertEquals(taskName2, r.getObject(1).get('name'))
         assertEquals(taskName1, r.getObject(2).get('name'))
-    }
-
-    @AfterClass
-    public static void stopNeo4j() {
-        neo4jControl.close();
     }
 }
