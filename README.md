@@ -90,7 +90,7 @@ Example query for the complete task graph of one specific build:
 
 ```
 MATCH (t:BuildTask {build:'gradle-teg2neo4j-plugin::71592037-771a-4391-b9db-825df301d6a4'}) RETURN t
-`
+```
 
 Another example of a possible query after the import - query for all tasks stored during the last 10 minutes:
 
