@@ -25,12 +25,12 @@ buildscript {
         maven { url "http://m2.neo4j.org/content/groups/public" }
     }
     dependencies {
-        classpath 'mahnkong:gradle-teg2neo4j-plugin:$VERSION'
+        classpath 'com.github.mahnkong:gradle-teg2neo4j-plugin:$VERSION'
     }
 }
 
 //apply the plugin
-apply plugin: 'mahnkong.gteg2neo4j'
+apply plugin: 'com.github.mahnkong.gteg2neo4j'
 
 //configuration of the plugin
 gteg2neo4j {
@@ -90,9 +90,9 @@ Example query for the complete task graph of one specific build:
 
 ```
 MATCH (t:BuildTask {build:'gradle-teg2neo4j-plugin::71592037-771a-4391-b9db-825df301d6a4'}) RETURN t
-```
+`
 
-Example query for all tasks stored during the last 10 minutes:
+Another example of a possible query after the import - query for all tasks stored during the last 10 minutes:
 
 ```
 MATCH (t:BuildTask) WHERE t.insertedAt + 600000 >= timestamp() RETURN t
@@ -109,17 +109,17 @@ The following labels exist for the task nodes:
 The following attributes are set for each task node (based on the task's state after the build finished):
 
 - name: The task's path
-- build: the build id (set by the "gradle-teg2neo4j-plugin")
-- executed: bool indicating that the task was executed
-- didWork: bool indicating that the task did some work
-- upToDate: bool indicating that the task was up to date
-- failureMsg: the thrown exception's message in case the task failed
-- insertedAt: timestamp of the data insertion (set by the "gradle-teg2neo4j-plugin")
+- build: The build id (set by the "gradle-teg2neo4j-plugin")
+- executed: A bool indicating that the task was executed
+- didWork: A bool indicating that the task did some work
+- upToDate: A bool indicating that the task was up to date
+- failureMsg: The thrown exception's message in case the task failed
+- insertedAt: The timestamp of the data insertion (set by the "gradle-teg2neo4j-plugin")
 
 The following relationships are set between the task nodes depending on the task execution graph
 
-- DEPENDS_ON: indicates, that one task depends on another task
-- FINALIZES: indicates, that one task finalizes another task
+- DEPENDS_ON: Indicates, that one task depends on another task
+- FINALIZES: Indicates, that one task finalizes another task
  
 ## How to build the plugin
 
