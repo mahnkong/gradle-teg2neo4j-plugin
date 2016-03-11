@@ -18,15 +18,14 @@ The build.gradle file of the project, which will use the plugin, must be extende
 //fetch plugin jar and dependencies
 buildscript {
     repositories {
-        //only relevant if the plugin is located in the local maven repo
-        mavenLocal()
-        jcenter()
         //required for the neo4j relevant dependencies
         maven { url "http://m2.neo4j.org/content/groups/public" }
     }
-    dependencies {
-        classpath 'com.github.mahnkong:gradle-teg2neo4j-plugin:$VERSION'
-    }
+}
+
+//load the plugin
+plugins {
+    id "com.github.mahnkong.gteg2neo4j" version "1.1.3"
 }
 
 //apply the plugin
