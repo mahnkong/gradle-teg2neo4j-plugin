@@ -4,3 +4,4 @@ build
 *.un~
 *.swp
 neo4j-home
+build.gradle.orig
