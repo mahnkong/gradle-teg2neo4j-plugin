@@ -1,5 +1,5 @@
 # gradle-teg2neo4j-plugin
-![Travis build status](https://api.travis-ci.org/mahnkong/gradle-teg2neo4j-plugin.svg?branch=develop)
+![Travis build status](https://api.travis-ci.org/mahnkong/gradle-teg2neo4j-plugin.svg?branch=master)
 
 "gradle-teg2neo4j-plugin" (or in short: "gteg2neo4j") is a Gradle plugin providing functionality to store the [Task Execution Graph](https://docs.gradle.org/2.11/javadoc/org/gradle/api/execution/TaskExecutionGraph.html "TaskExecutionGraph interface") (including information like success, failure, etc. for each task of the current build) of a project's gradle build inside a [Neo4j](http://neo4j.com/ "Neo4j Home") instance.
 
@@ -25,7 +25,7 @@ buildscript {
 
 //load the plugin
 plugins {
-    id "com.github.mahnkong.gteg2neo4j" version "1.1.3"
+    id "com.github.mahnkong.gteg2neo4j" version "1.1.4"
 }
 
 //apply the plugin
