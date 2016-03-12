@@ -1,6 +1,16 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.gradle.publish:plugin-publish-plugin:0.9.4"
+    }
+}
+
 plugins {
     id "com.jfrog.bintray" version "1.6"
-    id "com.gradle.plugin-publish" version "0.9.4"
 }
 
 apply plugin: 'groovy'
@@ -101,12 +111,12 @@ publishing {
 pluginBundle {
     website = project.ext.scmUrl
     vcsUrl = project.ext.scmUrl
+    description = project.ext.projectDescription
     tags = ['neo4j', 'task', 'graph']
 
     plugins {
         gteg2neo4jPlugin {
             id = "${group}.gteg2neo4j"
-            description = project.ext.projectDescription
             displayName = 'Gradle TaskExecutionGraph to Neo4j plugin'
         }
     }
