@@ -127,7 +127,7 @@ bintray {
     user = System.getenv('BINTRAY_USER')
     key = System.getenv('BINTRAY_KEY')
 
-	publications = ['artifacts']
+    publications = ['artifacts']
     pkg {
         repo = "maven"
         // it is the name that appears in bintray when logged
