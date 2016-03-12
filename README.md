@@ -25,7 +25,7 @@ buildscript {
 
 //load the plugin
 plugins {
-    id "com.github.mahnkong.gteg2neo4j" version "1.1.3"
+    id "com.github.mahnkong.gteg2neo4j" version "1.1.4"
 }
 
 //apply the plugin
